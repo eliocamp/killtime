@@ -353,8 +353,14 @@ server <- function(type = c("lt", "ld")) {
 # Run the application
 
 #' @export
-lethal_time <- function(options = list()) {
+lethal_time_ui <- function(options = list()) {
     run_app(type = "lt", options = options)
+}
+
+
+#' @export
+lethal_dose_ui <- function(options = list()) {
+    run_app(type = "ld", options = options)
 }
 
 
