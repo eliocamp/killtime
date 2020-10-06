@@ -179,7 +179,7 @@ server <- function(type = c("lt", "ld")) {
             }
         })
 
-        columns <- reactive({
+        columns <- shiny::reactive({
             colnames(all_data())
         })
 
@@ -190,7 +190,7 @@ server <- function(type = c("lt", "ld")) {
         output$raw_data <- shiny::renderDataTable(all_data())
         output$all_data <- shiny::renderDataTable(data())
 
-        data_columns <- reactive({
+        data_columns <- shiny::reactive({
             c(input$time_col,
               input$exp_col,
               input$control_col)

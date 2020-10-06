@@ -54,6 +54,8 @@ experiment <- data.frame(
 
  lethal_time(model)
 
+ plot(model)
+
 
 }
 \references{

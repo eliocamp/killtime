@@ -3,12 +3,27 @@
 \docType{data}
 \name{trans_probit}
 \alias{trans_probit}
+\alias{trans_identity}
+\alias{trans_logit}
+\alias{trans_cll}
 \title{Transformations}
 \format{
+An object of class \code{list} of length 3.
+
+An object of class \code{list} of length 3.
+
+An object of class \code{list} of length 3.
+
 An object of class \code{list} of length 3.
 }
 \usage{
 trans_probit
+
+trans_identity
+
+trans_logit
+
+trans_cll
 }
 \arguments{
 \item{p}{cummulative proportion of dead animals}
@@ -23,3 +38,4 @@ trans_probit
 Transformations
 }
 \keyword{datasets}
+\keyword{internal}

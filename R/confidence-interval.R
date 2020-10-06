@@ -25,7 +25,7 @@ lethal_time <-  function(model, p = 0.5, alpha = 0.05) {
 
   r <- n - 2
 
-  t_alpha <- qt(1 - alpha/2, df = r)
+  t_alpha <- stats::qt(1 - alpha/2, df = r)
 
   g <- (t_alpha^2)*v22/(b^2)
 

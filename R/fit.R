@@ -33,6 +33,8 @@
 #'
 #'  lethal_time(model)
 #'
+#'  plot(model)
+#'
 #'
 #' @references
 #' Pro bit Analysis of Correlated Data: Multiple Observations Over TiIne at One Concentration
@@ -65,7 +67,6 @@ lt_fit <- function(times, dead_experiment, dead_control,
   # Abbott's formula to correct for control mortality
   data$p_died_experiment <- with(data, (p_died_experiment - p_died_control)/(1 - p_died_control))
 
-  # McCullagh and Neider (1989) correction for negative and null values
   data$p_died_experiment <- with(data, ifelse(p_died_experiment <= 0, 0.5/(nexp +1), p_died_experiment))
   data$acum_p_dead_experiment <- cumsum(data$p_died_experiment)
 
@@ -141,7 +142,7 @@ lt_fit <- function(times, dead_experiment, dead_control,
   cov_omp <- ncorr^2*covp
 
   chisq_var <- obs_minus_pred %*% solve(cov_omp) %*% obs_minus_pred
-  chisq_pval <- pchisq(chisq_var, df = m - 2, lower.tail = FALSE)
+  chisq_pval <- stats::pchisq(chisq_var, df = m - 2, lower.tail = FALSE)
 
   # If the Chi-square is significant, correct all variances used to
   # calculate confidence limits on LT levels by multiplying each variance by h.
@@ -149,14 +150,14 @@ lt_fit <- function(times, dead_experiment, dead_control,
   h <- ifelse(chisq_pval < 0.05, chisq_var/(m - 2), 1)
 
   model <- structure(
-    list(coefficients = setNames(c(model), c("(Intercept)", "time")),
+    list(coefficients = stats::setNames(c(model), c("(Intercept)", "time")),
          residuals = c(pred_z - z),
          rank = 2,
          fitted.values = pred_z,
          model = data.frame(time = 10^data$time,
                             z = z),
          raw_data = raw_data,
-         terms = terms(z ~ time),
+         terms = stats::terms(z ~ time),
          qr = qr(cbind("(Intercept)" = 1, data$time)),
          df.residual = m - 2,
          h = h,
@@ -242,7 +243,7 @@ predict.killtime_lt_fit <- function(object,
   omega <- object$cov
   s2 <- as.vector((t(y) %*% solve(omega) %*% (I - H) %*% y)/object$df.residual)
 
-  t <- qt(1- alpha/2, object$df.residual)
+  t <- stats::qt(1- alpha/2, object$df.residual)
   h <- t*sqrt(s2*X0 %*% b1 %*% t(X0))
 
   h <- diag(h)
@@ -256,4 +257,64 @@ predict.killtime_lt_fit <- function(object,
 
 }
 
+
+
+pretty_LT <- function(LT, p) {
+  r <- ceiling(1/(LT$upr - LT$lwr))
+
+  text <- paste0("LT", p*100,": ", round(LT$LT, r),
+                 " (CI: ", round(LT$lwr, r), " \u2014 ",round(LT$upr, r), ")")
+  text
+}
+
+#' @export
+plot.killtime_lt_fit <- function(x, y, alpha = 0.05,
+                                 p = 0.5,
+                                 alpha_lt = 0.05,
+                                 x_lab = "Time",
+                                 y_lab = "% of dead animals\n(corrected by mortality in control group)",
+                                 ...) {
+  time <- fit <- time <- lwr <- upr <- NULL
+
+  newtime <- seq(0.001, lethal_time(x, 0.99)$LT, length.out = 80)
+  pred <- as.data.frame(stats::predict(x, newdata = newtime, interval = TRUE, alpha = alpha))
+  pred$time <- newtime
+
+
+  obs <- x$raw_data
+
+  LT <- as.data.frame(lethal_time(x, p = p, alpha = alpha_lt))
+
+  LD_text <- pretty_LT(LT, p)
+
+  # LD_align <- ifelse( p > 0.5, 1.05, -0.05)
+  # LD_x <- ifelse(p > 0.5, LT$lwr, LT$upr)
+
+  LD_x <- ifelse(max(obs$time) - LT$upr > LT$lwr, LT$upr, LT$lwr)
+  LD_align <- ifelse(max(obs$time) - LT$upr > LT$lwr,  -0.05, 1.05)
+
+
+  ggplot2::ggplot(pred) +
+    ggplot2::geom_ribbon(ggplot2::aes(time, fit, ymin = lwr, ymax = upr), fill = "#f4679d",
+                         alpha = 0.2) +
+    ggplot2::geom_line(ggplot2::aes(time, fit), color = "#f4679d") +
+    ggplot2::geom_errorbarh(data = LT, ggplot2::aes(y = p,  xmin = lwr, xmax = upr),
+                            height = 0.05) +
+    ggplot2::geom_point(data = LT, ggplot2::aes(y = p, x = LT), size = 2, shape = 18) +
+    ggplot2::annotate("label", label = LD_text, y = p, x = LD_x,
+                      hjust = LD_align, color = NA) +
+    ggplot2::annotate("text", label = LD_text, y = p, x = LD_x,
+                      hjust = LD_align, color = "black") +
+
+    ggplot2::geom_point(data = obs, ggplot2::aes(time, p),
+                        size = 2) +
+    ggplot2::labs(x = x_lab,
+                  y = y_lab) +
+    ggplot2::scale_y_continuous(labels =  scales::percent_format()) +
+    ggplot2::theme_minimal(base_size = 13) +
+    ggplot2::coord_cartesian(xlim = c(0, max(obs$time)))
+
+
+
+}
 

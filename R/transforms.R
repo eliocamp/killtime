@@ -4,6 +4,9 @@
 #' @param z transformed p
 #' @param covp covariance matrix of p
 #' @param n number of total experimental animales.
+#'
+#'
+#' @keywords internal
 trans_probit <- list(
   p_to_z = function(p) {
     z <- qnorm(p)
@@ -28,12 +31,14 @@ trans_probit <- list(
   }
 )
 
+#' @rdname trans_probit
 trans_identity <- list(
   p_to_z = function(p) p,
   z_to_p = function(z) z,
   covp_to_covz = function(covp, p, n) covp
 )
 
+#' @rdname trans_probit
 trans_logit <- list(
   p_to_z = function(p) {
     z <- log(p/(1 - p))
@@ -57,6 +62,7 @@ trans_logit <- list(
 
 )
 
+#' @rdname trans_probit
 trans_cll <- list(
   p_to_z = function(p) {
     z <- log(-log(1 - p))

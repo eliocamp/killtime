@@ -21,3 +21,14 @@ of dead animals of all experiments.}
 \description{
 Fits a logit
 }
+\examples{
+
+data <- data.frame(dose = c(38,40,40,40,42,42,42,44,44,44,47,47,47),
+                   dead = c(0,0,0,0,1,5,5,15,17,18,20,20,20))
+
+model <- with(data, ld_fit(dose, dead, n = 20))
+lethal_dose(model, p = c(0.25, 0.5, .90))
+
+plot(model, p = c(0.25, 0.5, 0.9))
+
+}

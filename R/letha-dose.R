@@ -8,6 +8,16 @@
 #' `"logit"`, `"probit"` and `"cll"` (for the Complementary log-log transformation).
 #' (Note that `"identiy"` is not supported).
 #'
+#' @examples
+#'
+#' data <- data.frame(dose = c(38,40,40,40,42,42,42,44,44,44,47,47,47),
+#'                    dead = c(0,0,0,0,1,5,5,15,17,18,20,20,20))
+#'
+#' model <- with(data, ld_fit(dose, dead, n = 20))
+#' lethal_dose(model, p = c(0.25, 0.5, .90))
+#'
+#' plot(model, p = c(0.25, 0.5, 0.9))
+#'
 #' @export
 ld_fit <- function(dose, dead, n = max(dead), trans_y = "logit") {
   if (trans_y == "cll") {
@@ -15,7 +25,7 @@ ld_fit <- function(dose, dead, n = max(dead), trans_y = "logit") {
   }
 
   y <- cbind(dead, n - dead)
-  model <- glm(y ~ dose, family = binomial(link = trans_y))
+  model <- stats::glm(y ~ dose, family = stats::binomial(link = trans_y))
   class(model) <- c("killtime_ld_fit", class(model))
   model$n <- n
   model
@@ -34,7 +44,7 @@ lethal_dose <- function(model, p = 0.5, alpha = 0.05) {
   ld <- MASS::dose.p(model, p = p)
   LD <- as.vector(ld)
   se <- as.vector(attr(ld, "SE", TRUE))
-  t <- qnorm(1 - alpha/2)
+  t <- stats::qnorm(1 - alpha/2)
 
   list(LD = LD,
        upr = LD + se*t,
@@ -50,20 +60,20 @@ predict.killtime_ld_fit <- function(object,
     newdata <- data.frame(dose = newdata)
   }
 
-  pred <- predict.glm(object, type = "link", se.fit = interval, newdata = newdata)
+  pred <- stats::predict.glm(object, type = "link", se.fit = interval, newdata = newdata)
 
   if (!interval) {
-    pred <- as.vector(family(object)$linkinv(pred))
+    pred <- as.vector(stats::family(object)$linkinv(pred))
     return(pred)
   }
-  t <- qt(1 - alpha/2, object$df.residual)
+  t <- stats::qt(1 - alpha/2, object$df.residual)
 
 
   pred <- list(fit = pred$fit,
                lwr = pred$fit - pred$se.fit*t,
                upr = pred$fit + pred$se.fit*t)
 
-  pred <- lapply(pred, function(x) family(object)$linkinv(x))
+  pred <- lapply(pred, function(x) stats::family(object)$linkinv(x))
   return(pred)
 }
 
@@ -75,8 +85,9 @@ plot.killtime_ld_fit <- function(x, y, alpha = 0.05,
                                  x_lab = "Dose",
                                  y_lab = "% of dead animals",
                                  ...) {
+  dead_experiment <- dose <- fit <- time <- lwr <- upr <- NULL
   newdose <- seq(min(x$model$dose), max(x$model$dose), length.out = 80)
-  pred <- as.data.frame(predict(x, newdata = newdose, interval = TRUE, alpha = alpha))
+  pred <- as.data.frame(stats::predict(x, newdata = newdose, interval = TRUE, alpha = alpha))
   pred$dose <- newdose
 
   obs <- data.frame(dose = x$model$dose,
@@ -114,13 +125,6 @@ plot.killtime_ld_fit <- function(x, y, alpha = 0.05,
 }
 
 
-pretty_LT <- function(LT, p) {
-  r <- ceiling(1/(LT$upr - LT$lwr))
-
-  text <- paste0("LT", p*100,": ", round(LT$LT, r),
-                 " (CI: ", round(LT$lwr, r), " \u2014 ",round(LT$upr, r), ")")
-  text
-}
 
 
 pretty_LD <- function(LT, p) {
@@ -129,55 +133,5 @@ pretty_LD <- function(LT, p) {
   text <- paste0("LD", p*100,": ", round(LT$LD, r),
                  " (CI: ", round(LT$lwr, r), " \u2014 ",round(LT$upr, r), ")")
   text
-}
-
-
-#' @export
-plot.killtime_lt_fit <- function(x, y, alpha = 0.05,
-                                 p = 0.5,
-                                 alpha_lt = 0.05,
-                                 x_lab = "Time",
-                                 y_lab = "% of dead animals\n(corrected by mortality in control group)",
-                                 ...) {
-  newtime <- seq(0.001, lethal_time(x, 0.99)$LT, length.out = 80)
-  pred <- as.data.frame(predict(x, newdata = newtime, interval = TRUE, alpha = alpha))
-  pred$time <- newtime
-
-
-  obs <- x$raw_data
-
-  LT <- as.data.frame(lethal_time(x, p = p, alpha = alpha_lt))
-
-  LD_text <- pretty_LT(LT, p)
-
-  # LD_align <- ifelse( p > 0.5, 1.05, -0.05)
-  # LD_x <- ifelse(p > 0.5, LT$lwr, LT$upr)
-
-  LD_x <- ifelse(max(obs$time) - LT$upr > LT$lwr, LT$upr, LT$lwr)
-  LD_align <- ifelse(max(obs$time) - LT$upr > LT$lwr,  -0.05, 1.05)
-
-
-  ggplot2::ggplot(pred) +
-    ggplot2::geom_ribbon(ggplot2::aes(time, fit, ymin = lwr, ymax = upr), fill = "#f4679d",
-                         alpha = 0.2) +
-    ggplot2::geom_line(ggplot2::aes(time, fit), color = "#f4679d") +
-    ggplot2::geom_errorbarh(data = LT, ggplot2::aes(y = p,  xmin = lwr, xmax = upr),
-                            height = 0.05) +
-    ggplot2::geom_point(data = LT, ggplot2::aes(y = p, x = LT), size = 2, shape = 18) +
-    ggplot2::annotate("label", label = LD_text, y = p, x = LD_x,
-                      hjust = LD_align, color = NA) +
-    ggplot2::annotate("text", label = LD_text, y = p, x = LD_x,
-                      hjust = LD_align, color = "black") +
-
-    ggplot2::geom_point(data = obs, ggplot2::aes(time, p),
-                        size = 2) +
-    ggplot2::labs(x = x_lab,
-                  y = y_lab) +
-    ggplot2::scale_y_continuous(labels =  scales::percent_format()) +
-    ggplot2::theme_minimal(base_size = 13) +
-    ggplot2::coord_cartesian(xlim = c(0, max(obs$time)))
-
-
-
 }
 
