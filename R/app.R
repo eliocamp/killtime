@@ -40,11 +40,6 @@ ui <- function(type = c("lt", "ld")) {
     }
 
 
-
-
-
-
-
     mime_types <- c("text/csv", "application/vnd.ms-excel",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     miniUI::miniPage(
@@ -127,10 +122,16 @@ ui <- function(type = c("lt", "ld")) {
 }
 
 
+
 # Define server logic required to draw a histogram
 server <- function(type = c("lt", "ld")) {
     type <- type[1]
-    function(input, output) {
+
+    function(input, output, session) {
+        session$onSessionEnded(function() {
+            stopApp()
+        })
+
 
         output$sheet_select <- shiny::renderUI({
             if (!is.null(input$file_input)) {
