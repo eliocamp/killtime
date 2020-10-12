@@ -1,3 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^data-raw$
+^dosis_letal\.R$
+^tiempo_letal\.R$
