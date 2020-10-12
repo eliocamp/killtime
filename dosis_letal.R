@@ -43,7 +43,7 @@ if (internet) {
   remote_sha <- remotes::remote_sha(remotes::github_remote("eliocamp/killtime"))
 
   if (!identical(local_sha, remote_sha)) {
-    cat("Existe una nueva versi\u00f3n. ¿Actualizar? (si/no): ")
+    cat("Existe una nueva versi\u00f3n. \u00BFActualizar? (si/no): ")
     response <- invisible(scan("stdin", character(), nlines = 1, quiet = TRUE))
 
     if (response != "no") {
