@@ -26,13 +26,12 @@ install_stuff <- !requireNamespace("remotes", quietly = TRUE) | !requireNamespac
 
 if (install_stuff) {
   internet_test(TRUE)
-
+  message("Instalando paquetes\n (esto s\u00f3lo es necesario la primera vez)")
   if (!requireNamespace("remotes", quietly = TRUE)) {
     install.packages("remotes", repos = "https://cloud.r-project.org")
   }
 
   if (!requireNamespace("killtime", quietly = TRUE)) {
-    message("Instalando paquete\n (esto s\u00f3lo es necesario la primera vez)")
     remotes::install_github("eliocamp/killtime", upgrde = "always")
   }
 }
