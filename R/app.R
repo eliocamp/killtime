@@ -25,9 +25,9 @@ ui <- function(type = c("lt", "ld")) {
         x_lab <- "Tiempo"
         y_lab <- "% de animales muertos\n(corregido por mortalidad en grupo control)"
         transformations <- c(Logit = "logit",
-                             "Complementary Log-log" = "cll",
+                             "Log-log Complementaria" = "cll",
                              Probit = "probit",
-                             "No transformation" = "identity")
+                             "Sin transformación" = "identity")
 
     } else {
         title <- "Claculadora de Dosis Letal"
@@ -35,7 +35,7 @@ ui <- function(type = c("lt", "ld")) {
         x_lab <- "Dosis"
         y_lab <- "% de animales muertos"
         transformations <- c(Logit = "logit",
-                             "Complementary Log-log" = "cll",
+                             "Log-log Complementaria" = "cll",
                              Probit = "probit")
     }
 
@@ -53,6 +53,8 @@ ui <- function(type = c("lt", "ld")) {
                           shiny::column(6, shiny::fileInput("file_input",
                                                             "Elegir archivo (csv o excel)",
                                                             accept = mime_types,
+                                                            buttonLabel = "Buscar...",
+                                                            placeholder = "Ningún archivo seleccionado",
                                                             width = "100%")),
                           shiny::column(6, shiny::uiOutput("sheet_select"))
                       ),
