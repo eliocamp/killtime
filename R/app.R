@@ -100,7 +100,9 @@ ui <- function(type = c("lt", "ld")) {
                           shiny::tags$style(type='text/css', "#LT_text { width:100%; margin-top: 25px;}")
                           ),
                       shiny::fluidRow(
-                          shiny::column(12, shiny::imageOutput("plot_saved", width = "auto", height = "auto")),
+                          shiny::column(12, shinycssloaders::withSpinner(
+                              shiny::imageOutput("plot_saved", width = "auto", height = "auto"),
+                              color = "#f4679d", type = 7)),
                           ),
                       shiny::fluidRow(
                           shiny::column(width = 6,
@@ -194,28 +196,36 @@ server <- function(type = c("lt", "ld")) {
         output$all_data <- shiny::renderDataTable(data())
 
         data_columns <- shiny::reactive({
-            c(input$time_col,
-              input$exp_col,
-              input$control_col)
+            if (type == "lt") {
+                c(input$time_col,
+                  input$exp_col,
+                  input$control_col)
+            } else {
+                c(input$time_col,
+                  input$exp_col,
+                  input$exp_n)
+            }
+
         })
 
 
         data <- shiny::reactive({
-            if (nrow(all_data() != 0)) {
+            if (nrow(all_data() != 0) && !is.null(data_columns())) {
                 data <- all_data()[, data_columns()]
-                colnames(data) <- c("Tiempo", "Grupo tratamiento", "Grupo control")
+                if (type == "lt") {
+                    colnames(data) <- c("Tiempo", "Grupo tratamiento", "Grupo control")
+                } else {
+                    colnames(data) <- c("Dosis", "Muertes", "N")
+                }
+
             } else {
                 data <- all_data()
             }
 
             data
-        }
-
-        )
+        })
 
         if (type == "lt") {
-
-
             output$time_dropdown <- shiny::renderUI(
 
                 shiny::selectInput("time_col", list("Tiempo", info_icon("Seleccionar la columna de tiempo")),
@@ -283,17 +293,20 @@ server <- function(type = c("lt", "ld")) {
             )
 
             output$exp_n <- shiny::renderUI(
-                shiny::numericInput("exp_n", list("N", info_icon("Cantidad total de animales")),
-                                    value = max(all_data()[[input$exp_col]]))
+                shiny::selectInput("exp_n",
+                                   list("N", info_icon("Seleccionar la columna con la cantidad total de animales")),
+                                   columns(),
+                                   selected = columns()[3])
+
             )
 
             output$control_dropdown <- shiny::renderUI(NULL)
 
             output$control_n <- shiny::renderUI(NULL)
 
-            model <- shiny::reactive(ld_fit(dose = data()[["Tiempo"]],
-                                     dead = data()[["Grupo tratamiento"]],
-                                     n = input$exp_n,
+            model <- shiny::reactive(ld_fit(dose = data()[["Dosis"]],
+                                     dead = data()[["Muertes"]],
+                                     n = data()[["N"]],
                                      trans_y = input$trans_y))
             plot <- shiny::reactive({
                 plot.killtime_ld_fit(model(),

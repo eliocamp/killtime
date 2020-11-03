@@ -21,4 +21,5 @@ Imports:
     ggplot2,
     MASS,
     scales,
-    readxl
+    readxl,
+    shinycssloaders
