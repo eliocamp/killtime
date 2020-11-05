@@ -105,11 +105,16 @@ ui <- function(type = c("lt", "ld")) {
                               color = "#f4679d", type = 7)),
                           ),
                       shiny::fluidRow(
-                          shiny::column(width = 6,
+                          shiny::column(width = 4,
                             shiny::textAreaInput("x_lab", "Etiqueta x", x_lab, rows = 1)),
-                          shiny::column(width = 6,
+                          shiny::column(width = 4,
                             shiny::textAreaInput("y_lab", "Etiqueta y", y_lab)),
+                          shiny::column(width = 4,
+                                        shiny::checkboxInput("plot_trans", "Transformar el eje y?"))
                       ),
+
+
+
                       shiny::fluidRow(
                           shiny::column(width = 4, shiny::numericInput("width", "Ancho (px)", value = 3200)),
                           shiny::column(width = 4, shiny::numericInput("height", "Alto (px)", value = 1500)),
@@ -313,7 +318,8 @@ server <- function(type = c("lt", "ld")) {
                                      p = input$lt_level/100,
                                      alpha_ld = input$lt_alpha,
                                      x_lab = input$x_lab,
-                                     y_lab = input$y_lab) +
+                                     y_lab = input$y_lab,
+                                     trans = input$plot_trans) +
                     ggplot2::theme_minimal(base_size = input$text_size)
             })
 

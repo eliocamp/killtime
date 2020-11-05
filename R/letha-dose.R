@@ -8,6 +8,7 @@
 #' `"logit"`, `"probit"` and `"cll"` (for the Complementary log-log transformation).
 #' (Note that `"identiy"` is not supported).
 #'
+#'
 #' @examples
 #'
 #' data <- data.frame(dose = c(38,40,40,40,42,42,42,44,44,44,47,47,47),
@@ -55,6 +56,7 @@ lethal_dose <- function(model, p = 0.5, alpha = 0.05) {
 predict.killtime_ld_fit <- function(object,
                                     newdata = NULL,
                                     interval = FALSE,
+                                    trans = FALSE,
                                     alpha = 0.05) {
   if (!is.null(newdata)) {
     newdata <- data.frame(dose = newdata)
@@ -63,7 +65,13 @@ predict.killtime_ld_fit <- function(object,
   pred <- stats::predict.glm(object, type = "link", se.fit = interval, newdata = newdata)
 
   if (!interval) {
-    pred <- as.vector(stats::family(object)$linkinv(pred))
+    if (trans) {
+      pred <- as.vector(red)
+    } else {
+      pred <- as.vector(stats::family(object)$linkinv(pred))
+    }
+
+
     return(pred)
   }
   t <- stats::qt(1 - alpha/2, object$df.residual)
@@ -73,9 +81,16 @@ predict.killtime_ld_fit <- function(object,
                lwr = pred$fit - pred$se.fit*t,
                upr = pred$fit + pred$se.fit*t)
 
-  pred <- lapply(pred, function(x) stats::family(object)$linkinv(x))
+  if (trans) {
+    pred <- as.vector(red)
+  } else {
+    pred <- lapply(pred, function(x) stats::family(object)$linkinv(x))
+  }
+
   return(pred)
 }
+
+
 
 
 #' @export
@@ -84,10 +99,13 @@ plot.killtime_ld_fit <- function(x, y, alpha = 0.05,
                                  alpha_ld = 0.05,
                                  x_lab = "Dose",
                                  y_lab = "% of dead animals",
+                                 trans = FALSE,
                                  ...) {
-  dead_experiment <- dose <- fit <- time <- lwr <- upr <- NULL
+  dead_experiment <- dose <- fit <- lwr <- upr <- NULL
   newdose <- seq(min(x$model$dose), max(x$model$dose), length.out = 80)
+
   pred <- as.data.frame(stats::predict(x, newdata = newdose, interval = TRUE, alpha = alpha))
+
   pred$dose <- newdose
 
   obs <- data.frame(dose = x$model$dose,
@@ -97,6 +115,15 @@ plot.killtime_ld_fit <- function(x, y, alpha = 0.05,
 
 
   LD_text <- pretty_LD(LD, p)
+
+  if (trans) {
+    trans <- scales::trans_new("link",
+                               transform =  stats::family(x)$linkfun,
+                               inverse = stats::family(x)$linkinv)
+  } else {
+    trans <- scales::identity_trans()
+  }
+
 
   # LD_align <- ifelse( p > 0.5, 1.05, -0.05)
   # LD_x <- ifelse(p > 0.5, LT$lwr, LT$upr)
@@ -120,7 +147,8 @@ plot.killtime_ld_fit <- function(x, y, alpha = 0.05,
                         size = 2) +
     ggplot2::labs(x = x_lab,
                   y = y_lab) +
-    ggplot2::scale_y_continuous(labels =  scales::percent_format()) +
+    ggplot2::scale_y_continuous(labels =  scales::percent_format(),
+                                trans = trans) +
     ggplot2::theme_minimal(base_size = 13)
 }
 

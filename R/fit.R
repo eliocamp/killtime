@@ -273,6 +273,7 @@ plot.killtime_lt_fit <- function(x, y, alpha = 0.05,
                                  alpha_lt = 0.05,
                                  x_lab = "Time",
                                  y_lab = "% of dead animals\n(corrected by mortality in control group)",
+                                 trans = FALSE,
                                  ...) {
   time <- fit <- time <- lwr <- upr <- NULL
 
@@ -293,6 +294,13 @@ plot.killtime_lt_fit <- function(x, y, alpha = 0.05,
   LD_x <- ifelse(max(obs$time) - LT$upr > LT$lwr, LT$upr, LT$lwr)
   LD_align <- ifelse(max(obs$time) - LT$upr > LT$lwr,  -0.05, 1.05)
 
+  if (trans) {
+    trans <- scales::trans_new("link",
+                               transform =  stats::family(x)$linkfun,
+                               inverse = stats::family(x)$linkinv)
+  } else {
+    trans <- "identity"
+  }
 
   ggplot2::ggplot(pred) +
     ggplot2::geom_ribbon(ggplot2::aes(time, fit, ymin = lwr, ymax = upr), fill = "#f4679d",
@@ -310,7 +318,7 @@ plot.killtime_lt_fit <- function(x, y, alpha = 0.05,
                         size = 2) +
     ggplot2::labs(x = x_lab,
                   y = y_lab) +
-    ggplot2::scale_y_continuous(labels =  scales::percent_format()) +
+    ggplot2::scale_y_continuous(labels =  scales::percent_format(), trans = trans) +
     ggplot2::theme_minimal(base_size = 13) +
     ggplot2::coord_cartesian(xlim = c(0, max(obs$time)))
 
